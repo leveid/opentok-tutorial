@@ -1,0 +1,71 @@
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+	<style type="text/css">body { height:100%; width:100%; margin:0; padding:0; font-family:Arial; }</style>
+	<script src='//static.opentok.com/v2/js/opentok.min.js'></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+</head>
+<body>
+	<script type="text/javascript">
+		var lastclick = 0,
+		OT_session, publisher, subscriber, stream;
+		$(document).ready(function() {
+			connect();
+		});
+
+		function connect() {
+			$.ajax({
+				url: '/chat',
+				dataType: 'json',
+				cache: false,
+				complete: function(rslt) {
+					start_ot(rslt.responseJSON);
+				}
+			});
+		}
+
+		function start_ot(config) {
+			var errhandler = function(error) {
+				if (error) {
+					console.log(error);
+				}
+			};
+			if (OT.checkSystemRequirements() == 1) {
+				OT_session = OT.initSession(config.api_key, config.sessionID);
+				OT_session.connect(config.token, function(error) {
+					if (error) {
+						console.log("Error connecting: ", error.code, error.message);
+					} else {
+						OT_session.on('streamCreated', function(event) {
+							stream = event.stream;
+							var subscriberProperties = {
+								insertMode: 'append',
+								audioVolume: 100,
+								width: '100%',
+								height: '100%'
+							};
+							subscriber = OT_session.subscribe(stream, 'sub_viewer', subscriberProperties, errhandler);
+						});
+						var publisherProperties = {
+							insertMode: "append",
+							width: '100%',
+							height: '100%',
+							name: "John Smith"
+						};
+						publisher = OT.initPublisher('pub_viewer', publisherProperties, errhandler);
+						OT_session.publish(publisher, errhandler);
+					}
+				});
+			}
+		}
+	</script>
+	<table style="width:100%;height:100%;"><tr>
+		<td width="50%">
+			<div id="sub_viewer" style="background-color:black;width:100%;height:100%;display:inline-block;"></div>
+		</td>
+		<td width="50%">
+			<div id="pub_viewer" style="background-color:black;width:100%;height:100%;display:inline-block;"></div>
+		</td>
+	</tr></table>
+</body>
+</html>
